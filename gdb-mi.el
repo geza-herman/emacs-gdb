@@ -2741,7 +2741,7 @@ If ARG is `dprintf' create a dprintf breakpoint instead."
     gdb--session))
 
 ;;;###autoload
-(defun gdb-executable (debuggee-path)
+(defun gdb-executable (debuggee-path &optional commands)
   "Start debugging an executable at DEBUGGEE-PATH in the current session.
 If no session is available, one is automatically created."
   (interactive
@@ -2752,6 +2752,8 @@ If no session is available, one is automatically created."
     (setf (gdb--session-debuggee-path session) debuggee-path)
 
     (with-selected-frame (gdb--session-frame session)
+      (cl-loop for cmd in commands
+               do (gdb--command cmd))
       (gdb--command (concat "-file-exec-and-symbols " (gdb--escape-argument (gdb--local-path debuggee-path))))
       (gdb--command "-file-list-exec-source-file" 'gdb--context-initial-file)
       (gdb--rename-buffers-with-debuggee debuggee-path))
