@@ -1553,12 +1553,12 @@ stopped thread before running the command. If FORCE-STOPPED is
    (let* ((frame (gdb--session-selected-frame session))
           (variables (and frame (gdb--frame-variables frame)))
           (table (make-gdb--table :target-line (gdb--current-line))))
-     (gdb--table-add-header table '("Name" "Type" "Value"))
+     (gdb--table-add-header table '("Name" "Value" "Type"))
      (dolist (variable variables)
        (gdb--table-add-row
         table (list (propertize (gdb--variable-name  variable) 'face 'gdb-variable-face)
-                    (propertize (gdb--variable-type  variable) 'face 'gdb-type-face)
-                    (or         (gdb--variable-value variable) "<Composite type>"))
+                    (or         (gdb--variable-value variable) "<Composite type>")
+                    (propertize (gdb--variable-type  variable) 'face 'gdb-type-face))
         (list 'gdb--var variable)))
      (gdb--table-insert table))))
 
