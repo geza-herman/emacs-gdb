@@ -2434,12 +2434,12 @@ If ARG is non-nil, resume all threads unconditionally."
    (let* ((inferred-thread (gdb--infer-thread 'not-selected))
           (selected-thread (gdb--session-selected-thread session))
           (thread-to-resume
-           (unless arg
+           (when arg
              (cond
               ((and inferred-thread (string= (gdb--thread-state inferred-thread) "stopped")) inferred-thread)
               ((and selected-thread (string= (gdb--thread-state selected-thread) "stopped")) selected-thread)))))
 
-     (if (or arg (not thread-to-resume))
+     (if (or (not arg) (not thread-to-resume))
          (gdb--command "-exec-continue --all")
        (gdb--command "-exec-continue" nil thread-to-resume)))))
 
@@ -2447,7 +2447,7 @@ If ARG is non-nil, resume all threads unconditionally."
   "When the inferior is not running, start it. Else, run `gdb-continue', which see."
   (interactive "P")
   (gdb--with-valid-session
-   (if (gdb--session-threads session) (gdb-continue) (gdb-run arg))))
+   (if (gdb--session-threads session) (gdb-continue arg) (gdb-run arg))))
 
 (defun gdb-start (&optional arg)
   "Start execution of the inferior from the beginning, stopping at the start of the inferior's main subprogram.
@@ -2467,12 +2467,12 @@ If ARG is non-nil, stop all threads unconditionally."
    (let* ((inferred-thread (gdb--infer-thread 'not-selected))
           (selected-thread (gdb--session-selected-thread session))
           (thread-to-stop
-           (unless arg
+           (when arg
              (cond
               ((and inferred-thread (not (string= (gdb--thread-state inferred-thread) "stopped"))) inferred-thread)
               ((and selected-thread (not (string= (gdb--thread-state selected-thread) "stopped"))) selected-thread)))))
 
-     (if (or arg (not thread-to-stop))
+     (if (or (not arg) (not thread-to-stop))
          (gdb--command "-exec-interrupt --all")
        (gdb--command "-exec-interrupt" nil thread-to-stop)))))
 
