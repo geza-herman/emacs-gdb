@@ -126,17 +126,33 @@ This can also be set to t, which means that all debug components are active."
   :prefix "gdb-")
 
 (defface gdb-breakpoint-enabled-face
-  '((t :foreground "red1" :weight bold))
+  '((t :background "#770000" :foreground "#ff0000"))
   "Face for enabled breakpoint icon in fringe."
   :group 'gdb-faces
   :version "26.1")
 
+(defface gdb-breakpoint-enabled-line-face
+  '((t :background "#770000" :extend t))
+  ""
+  :group 'gdb-faces)
+
+(defface gdb-breakpoint-disabled-line-face
+  '((t :background "#404040" :extend t))
+  ""
+  :group 'gdb-faces)
+
+(defface gdb-current-source-line-face
+  '((t :background "#004278" :extend t))
+  ""
+  :group 'gdb-faces)
+
+(defface gdb-current-source-line-fringe-face
+  '((t :background "#004888" :foreground "#00bfff"))
+  ""
+  :group 'gdb-faces)
+
 (defface gdb-breakpoint-disabled-face
-  '((((class color) (min-colors 88)) :foreground "gray70")
-    (((class color) (min-colors 8) (background light)) :foreground "black")
-    (((class color) (min-colors 8) (background dark)) :foreground "white")
-    (((type tty) (class mono)) :inverse-video t)
-    (t :background "gray"))
+  '((t :background "#404040" :foreground "#bbbbbb"))
   "Face for disabled breakpoint icon in fringe."
   :group 'gdb-faces
   :version "26.1")
@@ -188,7 +204,7 @@ This can also be set to t, which means that all debug components are active."
     :group 'gdb-faces
     :version "26.1")
 
-  (defface gdb-stopped-face '((t :inherit font-lock-warning-face))
+  (defface gdb-stopped-face '((t :inherit font-lock-warning-face :underline nil))
     "Face for highlighting the \"stopped\" keyword."
     :group 'gdb-faces
     :version "26.1")
@@ -203,7 +219,7 @@ This can also be set to t, which means that all debug components are active."
     :group 'gdb-faces
     :version "26.1")
 
-  (defface gdb-y-face '((t :inherit font-lock-warning-face))
+  (defface gdb-y-face '((t :inherit font-lock-warning-face :underline nil))
     "Face for highlighting the enabled symbol \"y\" in breakpoint buffers."
     :group 'gdb-faces
     :version "26.1")
@@ -580,7 +596,8 @@ DATA is an alist and must at least include `type'."
              (pos (cond ((consp line-or-pos) (save-excursion (goto-char (car line-or-pos))
                                                              (line-beginning-position)))
                         ((line-beginning-position (1+ (- line-or-pos (gdb--current-line)))))))
-             (overlay (make-overlay pos pos buffer))
+             (end-pos (save-excursion (goto-char pos) (1+ (line-end-position))))
+             (overlay (make-overlay pos end-pos buffer))
              (dummy-string (make-string 1 ?x))
              property)
         ;; NOTE(nox): Properties for housekeeping, session and type of symbol
@@ -595,6 +612,7 @@ DATA is an alist and must at least include `type'."
                 (enabled    (alist-get 'enabled    data)))
             (push overlay (gdb--breakpoint-overlays breakpoint))
             (overlay-put overlay 'gdb--breakpoint breakpoint)
+            (overlay-put overlay 'face (if enabled 'gdb-breakpoint-enabled-line-face 'gdb-breakpoint-disabled-line-face))
 
             (if (display-images-p)
                 (setq property
@@ -604,8 +622,9 @@ DATA is an alist and must at least include `type'."
 
          ((memq type '(source-indicator frame-indicator thread-indicator disassembly-indicator))
           (overlay-put overlay 'priority 10) ;; NOTE(nox): Above breakpoint symbols
+          (overlay-put overlay 'face 'gdb-current-source-line-face)
           (if (display-images-p)
-              (setq property '(left-fringe right-triangle compilation-warning))
+              (setq property '(left-fringe right-triangle gdb-current-source-line-fringe-face))
             (setq property '((margin left-margin) "=>")))))
 
         (put-text-property 0 1 'display property dummy-string)
