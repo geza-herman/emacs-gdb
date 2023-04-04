@@ -743,7 +743,7 @@ When FRAME is `deselect-frame', then deselect the current frame but keep the sel
          (gdb--command "-var-update --all-values *" (cons 'gdb--context-watcher-update auto) frame))
 
        (if (and frame (not (gdb--frame-variables frame)))
-           (gdb--command "-stack-list-variables --simple-values" (cons 'gdb--context-get-variables frame) frame)
+           (gdb--command "-stack-list-variables --all-values" (cons 'gdb--context-get-variables frame) frame)
          (cl-pushnew 'gdb--variables (gdb--session-buffer-types-to-update session)))
 
        (gdb--disassembly-fetch frame)
@@ -1572,12 +1572,12 @@ stopped thread before running the command. If FORCE-STOPPED is
    (let* ((frame (gdb--session-selected-frame session))
           (variables (and frame (gdb--frame-variables frame)))
           (table (make-gdb--table :target-line (gdb--current-line))))
-     (gdb--table-add-header table '("Name" "Value" "Type"))
+     (gdb--table-add-header table '("Name" "Value"))
      (dolist (variable variables)
        (gdb--table-add-row
         table (list (propertize (gdb--variable-name  variable) 'face 'gdb-variable-face)
-                    (or         (gdb--variable-value variable) "<Composite type>")
-                    (propertize (gdb--variable-type  variable) 'face 'gdb-type-face))
+                    (or         (gdb--variable-value variable) "<Composite type>"))
+                    ;; (propertize (gdb--variable-type  variable) 'face 'gdb-type-face))
         (list 'gdb--var variable)))
      (gdb--table-insert table))))
 
