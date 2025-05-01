@@ -1776,21 +1776,13 @@ stopped thread before running the command. If FORCE-STOPPED is
      (when data
        (cond
         (frame
-         (let ((func (gdb--frame-func frame))
-               (file (gdb--frame-file frame))
-               (line (gdb--frame-line frame)))
-           (cond
-            ((and func file line)
+         (let ((func (gdb--frame-func frame)))
              (if (string= (gdb--disassembly-data-func data) func)
                  (cl-pushnew 'gdb--disassembly (gdb--session-buffer-types-to-update session))
-               (gdb--command (format "-data-disassemble -f %s -l %d -- %d"
-                                     (gdb--escape-argument (gdb--local-path file)) line
+               (gdb--command (format "-data-disassemble -a %s -- %d"
+                                     (gdb--frame-addr frame)
                                      (gdb--disassembly-data-mode data))
-                             (cons 'gdb--context-disassemble data))))
-            (t
-             (gdb--command (format "-data-disassemble -s $pc -e $pc+500 -- %d" (gdb--disassembly-data-mode data))
-                           (cons 'gdb--context-disassemble data) frame)))
-
+                             (cons 'gdb--context-disassemble data)))
            (setf (gdb--disassembly-data-func data) func)))
 
         (t (gdb--remove-all-symbols session 'disassembly-indicator)))))))
