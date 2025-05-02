@@ -1744,24 +1744,7 @@ stopped thread before running the command. If FORCE-STOPPED is
     (define-key map (kbd "F") #'gdb-disassembly-change-flavor)
     map))
 
-(defconst gdb--disassembly-font-lock-keywords
-  '(;; 0xNNNNNNNN [RawOpcode] Opcode
-    ("^0x[[:xdigit:]]+[[:space:]]+\\(\\(?:[0-9a-fA-F][0-9a-fA-F] \\)*\\)\\(\\sw+\\)"
-     (1 'gdb-raw-opcode-face nil t) (2 'gdb-opcode-face))
-    ;; Hexadecimals
-    ("0x[[:xdigit:]]+" . 'gdb-constant-face)
-    ;; Source lines
-    ("^\\(Line [0-9]+\\)\\(.*\\)$"
-     (1 'gdb-disassembly-line-indicator-face) (2 'gdb-disassembly-src-face))
-    ;; %register(at least i386)
-    ("%\\sw+" . 'gdb-variable-face)
-    ;; <FunctionName+Number>
-    ("<\\([^+>]+\\)\\(?:\\+\\([0-9]+\\)\\)?>"
-     (1 'gdb-function-face) (2 'gdb-constant-face nil t)))
-  "Font lock keywords used in `gdb--disassembly'.")
-
 (define-derived-mode gdb-disassembly-mode nil "GDB Disassembly"
-  (setq-local font-lock-defaults '(gdb--disassembly-font-lock-keywords t))
   (setq-local buffer-read-only t)
   (buffer-disable-undo))
 
@@ -1792,19 +1775,53 @@ stopped thread before running the command. If FORCE-STOPPED is
         (func              (concat "<" func ">"))
         (t "")))
 
+(defun gdb--propertize-hexadecimals (str)
+  (let ((result (copy-sequence str))
+        (start 0))
+    (while (string-match "0x[[:xdigit:]]+" result start)
+      (add-text-properties (match-beginning 0) (match-end 0) `(face gdb-constant-face) result)
+      (setq start (match-end 0)))
+    result))
+
+(defun gdb--propertize-bracket-thingy (str)
+  (let ((result (copy-sequence str))
+        (start 0))
+    (while (string-match "<\\([^+>]+\\)\\(?:\\+\\([0-9]+\\)\\)?>" result start)
+      (add-text-properties (match-beginning 1) (match-end 1) `(face gdb-function-face) result)
+      (when (match-beginning 2)
+        (add-text-properties (match-beginning 2) (match-end 2) `(face gdb-constant-face) result))
+      (setq start (match-end 0)))
+    result))
+
+(defun gdb--propertize-raw-opcodes (str)
+  (when str
+    (propertize str 'face 'gdb-raw-opcode-face)))
+
+(defun gdb--propertize-instr-text (str)
+  (let ((result (copy-sequence str)))
+    (when (string-match "^\\sw+" result)
+      (add-text-properties (match-beginning 0) (match-end 0) '(face gdb-opcode-face) result))
+    (gdb--propertize-bracket-thingy (gdb--propertize-hexadecimals result))))
+
+(defun gdb--propertize-line-src-text (str)
+  (let ((result (copy-sequence str)))
+    (when (string-match "^Line [0-9]+" result)
+      (add-text-properties (match-beginning 0) (match-end 0) '(face gdb-disassembly-line-indicator-face) result))
+    result))
+
 (defun gdb--disassembly-print-instrs (fmt list current-addr-num target-ref)
   (cl-loop for instr in list
-           for addr       = (gdb--disassembly-instr-addr    instr)
+           for addr       = (gdb--propertize-hexadecimals (gdb--disassembly-instr-addr instr))
            for addr-num   = (gdb--parse-address addr)
-           for instr-text = (gdb--disassembly-instr-instr   instr)
+           for instr-text = (gdb--propertize-instr-text (gdb--disassembly-instr-instr instr))
            for func       = (gdb--disassembly-instr-func    instr)
            for offset     = (gdb--disassembly-instr-offset  instr)
-           for opcodes    = (gdb--disassembly-instr-opcodes instr)
+           for opcodes    = (gdb--propertize-raw-opcodes (gdb--disassembly-instr-opcodes instr))
            when (= addr-num current-addr-num) do (setf (gv-deref target-ref) (gdb--current-line))
            do (insert (propertize
                        (if opcodes
-                           (format fmt addr opcodes instr-text (gdb--disassembly-func-and-offset func offset))
-                         (format fmt addr instr-text (gdb--disassembly-func-and-offset func offset)))
+                           (format fmt addr opcodes instr-text (gdb--propertize-bracket-thingy (gdb--disassembly-func-and-offset func offset)))
+                         (format fmt addr instr-text (gdb--propertize-bracket-thingy (gdb--disassembly-func-and-offset func offset))))
                        'gdb--instr instr
                        'gdb--addr-num addr-num))))
 
@@ -1836,7 +1853,7 @@ stopped thread before running the command. If FORCE-STOPPED is
                       for line-str = (gdb--disassembly-src-line-str src)
                       for line-contents = (gdb--get-line file (gdb--stn line-str) t)
                       for instrs = (gdb--disassembly-src-instrs src)
-                      do  (when line-str (insert (format src-fmt line-str (or line-contents ""))))
+                      do  (when line-str (insert (gdb--propertize-line-src-text (format src-fmt line-str (or line-contents "")))))
                       do  (gdb--disassembly-print-instrs instr-fmt instrs current-addr-num target-ref))
 
            (gdb--disassembly-print-instrs instr-fmt list current-addr-num target-ref))
