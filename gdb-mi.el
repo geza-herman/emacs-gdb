@@ -1630,11 +1630,12 @@ stopped thread before running the command. If FORCE-STOPPED is
          (children (gdb--watcher-children watcher))
          (row (gdb--table-add-row
                table-or-parent
-               (list expr (gdb--add-face (gdb--watcher-type watcher) 'gdb-type-face)
+               (list expr
                      (if out-of-scope
                          (eval-when-compile (propertize "Out of scope" 'face 'gdb-out-of-scope-face))
                        (gdb--add-face (gdb--watcher-value watcher)
-                                      (and (eq (gdb--watcher-flag watcher) tick) 'gdb-modified-face))))
+                                      (and (eq (gdb--watcher-flag watcher) tick) 'gdb-modified-face)))
+                     (gdb--add-face (gdb--watcher-type watcher) 'gdb-type-face))
                (list 'gdb--watcher watcher)
                (and (not out-of-scope) (> (gdb--watcher-children-count watcher) 0)) #'gdb--watcher-toggle-chilren)))
 
@@ -1658,7 +1659,7 @@ stopped thread before running the command. If FORCE-STOPPED is
           (table (make-gdb--table :start-line (and window-start (gdb--current-line window-start))
                                   :target-line (gdb--current-line))))
 
-     (gdb--table-add-header table '("Expr" "Type" "Value"))
+     (gdb--table-add-header table '("Expr" "Value" "Type"))
 
      (let ((watcher-at-start     (and window-start
                                       (get-text-property window-start              'gdb--watcher)))
