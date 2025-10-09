@@ -1616,7 +1616,7 @@ stopped thread before running the command. If FORCE-STOPPED is
      (when (and watcher (> (gdb--watcher-children-count watcher) 0))
        (if (and (setf (gdb--watcher-open watcher) (not (gdb--watcher-open watcher)))
                 (not  (gdb--watcher-children watcher)))
-           (gdb--command (concat "-var-list-children --simple-values " (gdb--watcher-name watcher))
+           (gdb--command (concat "-var-list-children --simple-values \"" (gdb--watcher-name watcher) "\"")
                          (cons 'gdb--context-watcher-list-children watcher))
 
          (cl-pushnew (current-buffer) (gdb--session-buffers-to-update session))
@@ -2161,7 +2161,7 @@ it from the list."
                         (puthash name watcher (gdb--session-watchers session))
                         watcher)
               else ;; NOTE(nox): Both the value and the type are null, so this is an access qualifier
-              do (gdb--command (concat "-var-list-children --simple-values " name)
+              do (gdb--command (concat "-var-list-children --simple-values \"" name "\"")
                                (cons 'gdb--context-watcher-list-children parent)))))
 
    (cl-pushnew 'gdb--watchers (gdb--session-buffer-types-to-update session))))
